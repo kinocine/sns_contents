@@ -2,26 +2,45 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>SNS 멀티 플랫폼 숏폼 생성기 (FB / IS / US)</title>
+  <title>SNS 멀티 포맷 비디오 생성기 (FB / IS / US)</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; }
     body { background: #0f1015; color: #e2e8f0; display: flex; height: 100vh; overflow: hidden; }
     
-    #sidebar { width: 440px; background: #181920; padding: 20px; overflow-y: auto; border-right: 1px solid #272832; display: flex; flex-direction: column; gap: 13px; }
+    #sidebar { width: 460px; background: #181920; padding: 20px; overflow-y: auto; border-right: 1px solid #272832; display: flex; flex-direction: column; gap: 13px; }
     h2 { font-size: 1.15rem; color: #fff; }
     label { font-size: 0.85rem; color: #94a3b8; margin-bottom: 4px; display: block; font-weight: 500; }
-    input[type="text"], input[type="number"], select, textarea { width: 100%; background: #22232e; border: 1px solid #333547; color: #fff; padding: 9px; border-radius: 6px; font-size: 0.9rem; }
-    textarea { resize: vertical; height: 95px; line-height: 1.4; }
+    input[type="text"], input[type="number"], select, textarea { width: 100%; background: #22232e; border: 1px solid #333547; color: #fff; padding: 9px; border-radius: 6px; font-size: 0.88rem; }
+    textarea { resize: vertical; height: 90px; line-height: 1.4; }
 
+    /* 1. 작업 기준 폴더 영역 */
     .folder-box { background: #1e2230; border: 1px solid #2e3852; padding: 12px; border-radius: 8px; }
     .folder-status { font-size: 0.82rem; color: #38bdf8; margin-top: 5px; word-break: break-all; }
 
+    /* 프리뷰 플랫폼 탭 */
     .tab-group { display: flex; gap: 6px; background: #22232e; padding: 4px; border-radius: 8px; border: 1px solid #333547; }
     .tab-btn { flex: 1; background: transparent; color: #94a3b8; border: none; padding: 8px 4px; border-radius: 6px; font-weight: bold; font-size: 0.8rem; cursor: pointer; transition: 0.2s; }
     .tab-btn.active { background: #ff0055; color: #fff; }
 
     .file-box { border: 2px dashed #3b3e54; border-radius: 6px; padding: 12px; text-align: center; cursor: pointer; background: #22232e; }
     .file-box:hover { border-color: #ff0055; }
+
+    /* 썸네일 드래그 앤 드롭 영역 */
+    .thumb-container { display: flex; gap: 8px; overflow-x: auto; padding: 8px 4px; min-height: 90px; border: 1px solid #282a38; border-radius: 6px; background: #1a1b24; }
+    .thumb-card {
+      width: 74px; height: 74px; flex-shrink: 0; border-radius: 6px; overflow: hidden; position: relative;
+      background: #000; border: 2px solid #3b3f54; cursor: grab; user-select: none;
+    }
+    .thumb-card.dragging { opacity: 0.35; border-color: #ff0055; }
+    .thumb-card img, .thumb-card video { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+    .thumb-badge { position: absolute; top: 2px; left: 2px; background: rgba(0,0,0,0.8); color: #fff; font-size: 0.65rem; padding: 1px 4px; border-radius: 3px; font-weight: bold; }
+    .thumb-del { position: absolute; top: 2px; right: 2px; background: rgba(255,0,0,0.85); color: #fff; width: 16px; height: 16px; border-radius: 50%; font-size: 0.7rem; line-height: 15px; text-align: center; cursor: pointer; }
+    .thumb-type { position: absolute; bottom: 2px; right: 2px; background: #ff0055; color: #fff; font-size: 0.6rem; padding: 1px 3px; border-radius: 2px; font-weight: bold; }
+
+    /* 저장 플랫폼 타겟 선택 버튼 (기본: All) */
+    .target-group { display: flex; gap: 6px; }
+    .target-btn { flex: 1; padding: 8px 0; background: #20222c; border: 1px solid #3b3f54; border-radius: 6px; color: #cbd5e1; font-size: 0.8rem; font-weight: bold; cursor: pointer; text-align: center; }
+    .target-btn.active { background: #38bdf8; color: #000; border-color: #38bdf8; }
 
     .btn-group { display: flex; gap: 8px; }
     button.action-btn { cursor: pointer; border: none; border-radius: 6px; padding: 11px 14px; font-weight: bold; font-size: 0.9rem; transition: 0.2s; }
@@ -34,22 +53,17 @@
     .btn-render-all { background: linear-gradient(135deg, #ff0055, #ff5500); color: #fff; width: 100%; font-size: 0.95rem; padding: 13px; border-radius: 8px; box-shadow: 0 4px 15px rgba(255,0,85,0.3); }
     .btn-render-all:disabled { background: #333; color: #777; cursor: not-allowed; box-shadow: none; }
 
+    /* 프리뷰 뷰포트 영역 */
     #preview-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; padding: 20px; background: #08090c; }
     .monitor-container {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: #000;
-      border-radius: 14px;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.8), 0 0 0 4px #222430;
-      position: relative;
-      overflow: hidden;
+      display: flex; align-items: center; justify-content: center; background: #000; border-radius: 14px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.8), 0 0 0 4px #222430; position: relative; overflow: hidden;
       transition: width 0.3s, height 0.3s;
     }
     
-    .view-us { width: 320px; height: 568px; } /* 9:16 */
-    .view-is { width: 440px; height: 440px; } /* 1:1 */
-    .view-fb { width: 360px; height: 450px; } /* 4:5 */
+    .view-us { width: 320px; height: 568px; } /* 9:16 유튜브 쇼츠 */
+    .view-is { width: 440px; height: 440px; } /* 1:1 인스타그램 피드 */
+    .view-fb { width: 360px; height: 450px; } /* 4:5 페이스북 피드 */
 
     canvas { width: 100%; height: 100%; display: block; object-fit: cover; }
     .status-bar { margin-top: 15px; font-size: 0.85rem; color: #94a3b8; text-align: center; }
@@ -62,20 +76,20 @@
   <div id="sidebar">
     <h2>🎬 SNS 멀티 포맷 생성기</h2>
     
-    <!-- 기준 디렉토리 -->
+    <!-- 1. 기준 디렉토리 지정 (C:\sns_contents) -->
     <div class="folder-box">
-      <label style="color:#38bdf8; font-weight:bold;">📁 기준 폴더 지정 (C:\sns_contents)</label>
+      <label style="color:#38bdf8; font-weight:bold;">📁 1. 기준 디렉토리 지정 (C:\sns_contents)</label>
       <button type="button" class="action-btn btn-dir" onclick="selectRootDirectory()">폴더 선택하기</button>
-      <div id="folderStatus" class="folder-status">선택 안 됨 (C:\sns_contents 지정)</div>
+      <div id="folderStatus" class="folder-status">선택 안 됨 (C:\sns_contents 선택)</div>
     </div>
 
-    <!-- 플랫폼 탭 -->
+    <!-- 미리보기 화면 비율 탭 -->
     <div>
       <label>프리뷰 플랫폼 선택</label>
       <div class="tab-group">
-        <button class="tab-btn active" id="tab-us" onclick="changeMode('us')">유튜브 쇼츠 (9:16)</button>
-        <button class="tab-btn" id="tab-is" onclick="changeMode('is')">인스타 피드 (1:1)</button>
-        <button class="tab-btn" id="tab-fb" onclick="changeMode('fb')">페이스북 피드 (4:5)</button>
+        <button class="tab-btn active" id="tab-us" onclick="changeMode('us')">쇼츠 (9:16)</button>
+        <button class="tab-btn" id="tab-is" onclick="changeMode('is')">인스타 (1:1)</button>
+        <button class="tab-btn" id="tab-fb" onclick="changeMode('fb')">페이스북 (4:5)</button>
       </div>
     </div>
 
@@ -93,35 +107,41 @@
 질문은 무겁고 울림은 길다. 극장에서 반드시 확인해야 할 올해의 수작이다.</textarea>
     </div>
 
-    <!-- 이미지 비율 맞춤 옵션 -->
+    <!-- [검증된 알고리즘 복원] 목/머리 잘림 방지 구도 맞춤 방식 -->
     <div>
-      <label>이미지 구도 맞춤 방식</label>
+      <label style="color:#f43f5e; font-weight:bold;">🖼️ 이미지 구도 맞춤 방식</label>
       <select id="fitModeSelect" onchange="drawFrame(0, 0, currentMode)">
-        <option value="smart_top" selected>인물 상단 우선 (머리/얼굴 안 잘리게)</option>
-        <option value="contain_blur">전체 화면 보존 (여백은 블러 처리)</option>
-        <option value="cover_center">기존 중앙 꽉 채우기</option>
+        <option value="contain_blur" selected>전체 화면 보존 (팔/머리 100% 노출 + 여백 블러)</option>
+        <option value="smart_top">인물 상단 우선 (머리/얼굴 안 잘리게)</option>
+        <option value="cover_center">기존 중앙 꽉 채우기 (배경/풍경 사진용)</option>
       </select>
     </div>
 
-    <!-- 배경음악(BGM) 설정 -->
+    <!-- 스틸컷 & 영상 순서 배치 (드래그 앤 드롭) -->
+    <div>
+      <label>스틸컷 & 영상 (드래그하여 순서 변경)</label>
+      <input type="file" id="mediaInput" accept="image/*,video/*" multiple style="display: none;">
+      <div class="file-box" onclick="document.getElementById('mediaInput').click()">
+        + 클릭하여 사진이나 동영상 추가
+      </div>
+      <div id="thumbList" class="thumb-container" style="margin-top: 6px;"></div>
+    </div>
+
+    <!-- 동영상 앞부분 최대 사용 시간(초) 트리밍 -->
+    <div style="display:flex; gap:10px; align-items:center; background:#20222c; padding:8px 10px; border-radius:6px;">
+      <label style="margin:0; font-size:0.8rem; color:#aaa; flex:1;">동영상 앞부분 최대 사용 시간(초):</label>
+      <input type="number" id="videoMaxSec" value="10" min="1" max="60" style="width:70px; padding:4px 8px;">
+    </div>
+
+    <!-- 배경음악 설정 -->
     <div>
       <label>배경음악 (오디오)</label>
       <select id="bgmModeSelect" onchange="toggleBgmInput()">
         <option value="synth" selected>기본 잔잔한 앰비언트 BGM (자동 생성)</option>
-        <option value="custom">내 MP3 음원 파일 직접 선택</option>
+        <option value="custom">내 MP3 파일 직접 선택</option>
         <option value="none">무음</option>
       </select>
       <input type="file" id="bgmFileInput" accept="audio/*" style="display:none; margin-top:6px;">
-    </div>
-
-    <!-- 미디어 파일 선택 -->
-    <div>
-      <label>스틸컷 및 영상 선택 (5개 권장)</label>
-      <input type="file" id="mediaInput" accept="image/*,video/*" multiple style="display: none;">
-      <div class="file-box" onclick="document.getElementById('mediaInput').click()">
-        클릭하여 이미지 또는 영상을 선택하세요<br>
-        <span id="fileCount" style="font-size:0.75rem; color:#64748b;">(선택 파일 없음)</span>
-      </div>
     </div>
 
     <div>
@@ -134,7 +154,19 @@
       <button class="action-btn btn-stop" onclick="stopPreview()">■ 정지</button>
     </div>
 
-    <button id="renderBtn" class="action-btn btn-render-all" onclick="renderAllPlatforms()">🚀 FB + IS + US 3종 일괄 생성 및 저장 (소리 포함)</button>
+    <!-- 저장할 플랫폼 선택 (FB / IS / 쇼츠 / All, 디폴트: All) -->
+    <div>
+      <label>저장할 플랫폼 선택</label>
+      <div class="target-group">
+        <button type="button" class="target-btn active" id="tgt-all" onclick="setExportTarget('all')">All (3종 전체)</button>
+        <button type="button" class="target-btn" id="tgt-fb" onclick="setExportTarget('fb')">FB (페이스북)</button>
+        <button type="button" class="target-btn" id="tgt-is" onclick="setExportTarget('is')">IS (인스타)</button>
+        <button type="button" class="target-btn" id="tgt-us" onclick="setExportTarget('us')">쇼츠 (US)</button>
+      </div>
+    </div>
+
+    <!-- C:\sns_contents\[제목]_[날짜] 폴더 자동 생성 및 저장 버튼 -->
+    <button id="renderBtn" class="action-btn btn-render-all" onclick="executeRender()">🚀 [콘텐츠제목_날짜] 폴더 자동 생성 및 저장</button>
   </div>
 
   <div id="preview-area">
@@ -155,6 +187,7 @@
     };
 
     let currentMode = 'us';
+    let exportTarget = 'all'; // 기본값: All
     const canvas = document.getElementById('videoCanvas');
     const ctx = canvas.getContext('2d');
     const monitor = document.getElementById('monitor');
@@ -163,15 +196,13 @@
     let isPlaying = false;
     let animId = null;
     let rootDirHandle = null;
-    let customAudioBuffer = null;
-    let audioCtx = null;
     let bgmAudioEl = null;
 
-    // 디렉토리 핸들러
+    // 1. 기준 디렉토리 (C:\sns_contents) 선택
     async function selectRootDirectory() {
       try {
         rootDirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
-        document.getElementById('folderStatus').innerText = `연동됨: [${rootDirHandle.name}] (/output 저장)`;
+        document.getElementById('folderStatus').innerText = `연동됨: [${rootDirHandle.name}] 하위에 폴더 자동 생성`;
         document.getElementById('folderStatus').style.color = '#38bdf8';
       } catch (err) {
         if (err.name !== 'AbortError') alert('폴더 접근 권한을 획득하지 못했습니다.');
@@ -189,42 +220,135 @@
       drawFrame(0, 0, currentMode);
     }
 
-    function toggleBgmInput() {
-      const mode = document.getElementById('bgmModeSelect').value;
-      const fileIn = document.getElementById('bgmFileInput');
-      fileIn.style.display = (mode === 'custom') ? 'block' : 'none';
+    function setExportTarget(target) {
+      exportTarget = target;
+      document.querySelectorAll('.target-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById(`tgt-${target}`).classList.add('active');
+
+      const renderBtn = document.getElementById('renderBtn');
+      if (target === 'all') {
+        renderBtn.innerText = '🚀 [콘텐츠제목_날짜] 폴더에 3종 일괄 생성 및 저장';
+      } else {
+        renderBtn.innerText = `🚀 [콘텐츠제목_날짜] 폴더에 ${PLATFORMS[target].name} 단독 생성 및 저장`;
+      }
     }
 
-    document.getElementById('bgmFileInput').addEventListener('change', async (e) => {
+    function toggleBgmInput() {
+      const mode = document.getElementById('bgmModeSelect').value;
+      document.getElementById('bgmFileInput').style.display = (mode === 'custom') ? 'block' : 'none';
+    }
+
+    document.getElementById('bgmFileInput').addEventListener('change', (e) => {
       const file = e.target.files[0];
-      if (file) {
-        const url = URL.createObjectURL(file);
-        bgmAudioEl = new Audio(url);
-      }
+      if (file) bgmAudioEl = new Audio(URL.createObjectURL(file));
     });
 
+    // 2. 미디어 파일 로드 & 썸네일
     document.getElementById('mediaInput').addEventListener('change', function(e) {
       const files = Array.from(e.target.files);
-      loadedMedia = [];
-      document.getElementById('fileCount').innerText = `${files.length}개 파일 선택됨`;
-      
       files.forEach(file => {
         const url = URL.createObjectURL(file);
+        const item = { id: Date.now() + Math.random() };
         if (file.type.startsWith('image/')) {
           const img = new Image();
           img.src = url;
-          loadedMedia.push({ type: 'image', element: img });
+          item.type = 'image';
+          item.element = img;
         } else if (file.type.startsWith('video/')) {
           const vid = document.createElement('video');
           vid.src = url;
           vid.muted = true;
           vid.playsInline = true;
           vid.loop = true;
-          loadedMedia.push({ type: 'video', element: vid });
+          item.type = 'video';
+          item.element = vid;
         }
+        loadedMedia.push(item);
       });
+      renderThumbnails();
       setTimeout(() => drawFrame(0, 0, currentMode), 200);
+      e.target.value = "";
     });
+
+    function renderThumbnails() {
+      const container = document.getElementById('thumbList');
+      container.innerHTML = "";
+      if (loadedMedia.length === 0) {
+        container.innerHTML = `<span style="font-size:0.75rem; color:#64748b; margin:auto;">등록된 미디어 없음 (기본 템플릿 사용)</span>`;
+        return;
+      }
+
+      loadedMedia.forEach((item, index) => {
+        const card = document.createElement('div');
+        card.className = 'thumb-card';
+        card.draggable = true;
+        card.dataset.index = index;
+
+        if (item.type === 'image') {
+          const img = document.createElement('img');
+          img.src = item.element.src;
+          card.appendChild(img);
+        } else {
+          const vid = document.createElement('video');
+          vid.src = item.element.src;
+          vid.muted = true;
+          card.appendChild(vid);
+        }
+
+        const badge = document.createElement('div');
+        badge.className = 'thumb-badge';
+        badge.innerText = `#${index + 1}`;
+        card.appendChild(badge);
+
+        const typeBadge = document.createElement('div');
+        typeBadge.className = 'thumb-type';
+        typeBadge.innerText = item.type === 'video' ? 'VIDEO' : 'IMG';
+        card.appendChild(typeBadge);
+
+        const delBtn = document.createElement('div');
+        delBtn.className = 'thumb-del';
+        delBtn.innerText = '×';
+        delBtn.onclick = (e) => {
+          e.stopPropagation();
+          loadedMedia.splice(index, 1);
+          renderThumbnails();
+          drawFrame(0, 0, currentMode);
+        };
+        card.appendChild(delBtn);
+
+        card.addEventListener('dragstart', handleDragStart);
+        card.addEventListener('dragover', handleDragOver);
+        card.addEventListener('drop', handleDrop);
+        card.addEventListener('dragend', handleDragEnd);
+
+        container.appendChild(card);
+      });
+    }
+
+    let dragSrcIndex = null;
+    function handleDragStart(e) {
+      dragSrcIndex = Number(this.dataset.index);
+      this.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    }
+    function handleDragOver(e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+    }
+    function handleDrop(e) {
+      e.preventDefault();
+      const dropTargetIndex = Number(this.dataset.index);
+      if (dragSrcIndex !== null && dragSrcIndex !== dropTargetIndex) {
+        const movedItem = loadedMedia.splice(dragSrcIndex, 1)[0];
+        loadedMedia.splice(dropTargetIndex, 0, movedItem);
+        renderThumbnails();
+        drawFrame(0, 0, currentMode);
+      }
+    }
+    function handleDragEnd() {
+      this.classList.remove('dragging');
+      dragSrcIndex = null;
+    }
 
     function getScenes() {
       const title = document.getElementById('titleInput').value.trim();
@@ -244,7 +368,7 @@
       return scenes;
     }
 
-    // [핵심] 머리/목이 잘리지 않도록 개선된 스마트 렌더링
+    // [완전 복원] 검증된 원본 smartImage 처리 함수
     function drawSmartImage(ctx, img, w, h, fitMode) {
       const nw = img.videoWidth || img.naturalWidth || w;
       const nh = img.videoHeight || img.naturalHeight || h;
@@ -257,18 +381,17 @@
         ctx.drawImage(img, (w - nw * rBg) / 2, (h - nh * rBg) / 2, nw * rBg, nh * rBg);
         ctx.restore();
 
-        // 2) 전경 이미지: 비율 보존 (세로/가로 잘림 전혀 없음)
+        // 2) 전경 이미지: 비율 온전히 보존 (머리/목/팔/다리 절대 안 잘림)
         const rFg = Math.min(w / nw, h / nh);
         const fw = nw * rFg, fh = nh * rFg;
         ctx.drawImage(img, (w - fw) / 2, (h - fh) / 2, fw, fh);
 
       } else if (fitMode === 'smart_top') {
-        // 인물 상단 기준 맞춤: 머리 위쪽 공간(5~10%)을 확보하여 목/머리가 절대 잘리지 않음
+        // 상단 기준 정렬
         const r = Math.max(w / nw, h / nh);
         const nw2 = nw * r;
         const nh2 = nh * r;
         const cx = (w - nw2) / 2;
-        // 상단 제목 공간(약 120px) 아래로 자연스럽게 상단 기준 정렬
         const cy = Math.min(0, Math.max(h - nh2, (h * 0.12)));
         ctx.drawImage(img, cx, cy, nw2, nh2);
 
@@ -292,14 +415,25 @@
       ctx.fillStyle = "#0c0d12";
       ctx.fillRect(0, 0, W, H);
 
-      // 1. 미디어 그리기
+      // 1. 미디어 그리기 (동영상 앞부분 최대 시간 트리밍)
       if (scene.media) {
         const el = scene.media.element;
-        if (scene.media.type === 'video' && el.paused && isPlaying) el.play();
+        if (scene.media.type === 'video') {
+          const maxSec = parseFloat(document.getElementById('videoMaxSec').value) || 10;
+          const sceneDur = parseFloat(document.getElementById('durationInput').value) || 3.5;
+          const targetTime = (sceneProgress * Math.min(sceneDur, maxSec)) % maxSec;
+          
+          if (isPlaying) {
+            if (Math.abs(el.currentTime - targetTime) > 0.3) {
+              el.currentTime = targetTime;
+            }
+            if (el.paused) el.play();
+          }
+        }
         drawSmartImage(ctx, el, W, H, fitMode);
       }
 
-      // 2. 상/하단 은은한 섀도우 그라디언트
+      // 2. 상하단 시네마틱 섀도우 그라디언트
       const topGrad = ctx.createLinearGradient(0, 0, 0, H * 0.22);
       topGrad.addColorStop(0, 'rgba(0, 0, 0, 0.85)');
       topGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
@@ -358,14 +492,13 @@
       }
     }
 
-    // [음악 생성] 잔잔한 시네마틱 앰비언트 사운드트랙 (외부 파일 없을 때 자체 연주)
     function createAmbientAudio(audioContext, totalSec) {
       const dest = audioContext.createMediaStreamDestination();
       const chords = [
-        [220.00, 261.63, 329.63], // Am (A3, C4, E4)
-        [174.61, 220.00, 261.63], // F  (F3, A3, C4)
-        [261.63, 329.63, 392.00], // C  (C4, E4, G4)
-        [196.00, 246.94, 293.66]  // G  (G3, B3, D4)
+        [220.00, 261.63, 329.63],
+        [174.61, 220.00, 261.63],
+        [261.63, 329.63, 392.00],
+        [196.00, 246.94, 293.66]
       ];
 
       const masterGain = audioContext.createGain();
@@ -397,7 +530,6 @@
       return dest.stream.getAudioTracks()[0];
     }
 
-    // 미리보기 제어
     function startPreview() {
       stopPreview();
       isPlaying = true;
@@ -430,12 +562,14 @@
       document.getElementById('progressFill').style.width = '0%';
       document.getElementById('statusText').innerText = '정지됨';
       getScenes().forEach(s => {
-        if (s.media && s.media.type === 'video') s.media.element.pause();
+        if (s.media && s.media.type === 'video') {
+          s.media.element.pause();
+          s.media.element.currentTime = 0;
+        }
       });
     }
 
-    // 단일 플랫폼 녹화 (오디오 트랙 포함)
-    async function recordSinglePlatform(modeKey, outputDirHandle) {
+    async function recordSinglePlatform(modeKey, targetFolderHandle) {
       const config = PLATFORMS[modeKey];
       canvas.width = config.width;
       canvas.height = config.height;
@@ -446,11 +580,9 @@
       const totalDuration = duration * scenes.length;
       const totalSec = totalDuration / 1000;
 
-      // 캔버스 비디오 스트림
       const videoStream = canvas.captureStream(30);
       const combinedStream = new MediaStream([videoStream.getVideoTracks()[0]]);
 
-      // 오디오 스트림 믹싱
       const bgmMode = document.getElementById('bgmModeSelect').value;
       const aCtx = new (window.AudioContext || window.webkitAudioContext)();
 
@@ -480,7 +612,7 @@
           const fileName = `${config.prefix}${cleanTitle}.webm`;
 
           try {
-            const fileHandle = await outputDirHandle.getFileHandle(fileName, { create: true });
+            const fileHandle = await targetFolderHandle.getFileHandle(fileName, { create: true });
             const writable = await fileHandle.createWritable();
             await writable.write(blob);
             await writable.close();
@@ -504,7 +636,7 @@
           drawFrame(sceneIdx, sceneProgress, modeKey);
 
           document.getElementById('progressFill').style.width = ((elapsed / totalDuration) * 100) + '%';
-          document.getElementById('statusText').innerText = `[${config.name}] 영상 및 음악 합성 중... ${(elapsed / 1000).toFixed(1)}s`;
+          document.getElementById('statusText').innerText = `[${config.name}] 인코딩 중... ${(elapsed / 1000).toFixed(1)}s`;
 
           requestAnimationFrame(renderFrame);
         }
@@ -512,10 +644,18 @@
       });
     }
 
-    // 3대 플랫폼 일괄 생성
-    async function renderAllPlatforms() {
+    function getTodayString() {
+      const now = new Date();
+      const y = now.getFullYear();
+      const m = String(now.getMonth() + 1).padStart(2, '0');
+      const d = String(now.getDate()).padStart(2, '0');
+      return `${y}${m}${d}`;
+    }
+
+    // 🚀 [콘텐츠제목_날짜] 폴더 자동 생성 및 저장
+    async function executeRender() {
       if (!rootDirHandle) {
-        alert('먼저 상단의 [폴더 선택하기]를 눌러 C:\\sns_contents 폴더를 지정해 주세요.');
+        alert('먼저 1번 [폴더 선택하기]를 눌러 C:\\sns_contents 폴더를 지정해 주세요.');
         await selectRootDirectory();
         if (!rootDirHandle) return;
       }
@@ -525,20 +665,28 @@
       renderBtn.disabled = true;
 
       try {
-        const outputDirHandle = await rootDirHandle.getDirectoryHandle('output', { create: true });
-        const targets = ['us', 'is', 'fb'];
-        const completed = [];
+        const rawTitle = document.getElementById('titleInput').value.trim();
+        const cleanTitle = rawTitle.replace(/[\/:*?"<>| ]/g, '_');
+        const folderName = `${cleanTitle}_${getTodayString()}`;
 
+        // C:\sns_contents 아래에 [제목_날짜] 폴더 자동 생성
+        const targetFolderHandle = await rootDirHandle.getDirectoryHandle(folderName, { create: true });
+        
+        // All 또는 단일 플랫폼 분기
+        const targets = (exportTarget === 'all') ? ['us', 'is', 'fb'] : [exportTarget];
+        document.getElementById('statusText').innerText = `폴더: ${folderName}\n(${targets.map(t => PLATFORMS[t].name).join(', ')}) 생성 시작...`;
+
+        const completed = [];
         for (const mode of targets) {
-          const savedFile = await recordSinglePlatform(mode, outputDirHandle);
+          const savedFile = await recordSinglePlatform(mode, targetFolderHandle);
           completed.push(savedFile);
         }
 
-        document.getElementById('statusText').innerText = `🎉 음악 포함 3종 생성 완료!\n저장위치: output/ (${completed.join(', ')})`;
+        document.getElementById('statusText').innerText = `🎉 완료!\n저장위치: C:\\sns_contents\\${folderName}\n(${completed.join(', ')})`;
         document.getElementById('statusText').style.color = '#38bdf8';
       } catch (err) {
         console.error(err);
-        document.getElementById('statusText').innerText = '❌ 오류가 발생했습니다.';
+        document.getElementById('statusText').innerText = '❌ 오류: 저장 폴더 권한 또는 인코딩 에러';
         document.getElementById('statusText').style.color = '#ef4444';
       } finally {
         renderBtn.disabled = false;
@@ -546,7 +694,10 @@
       }
     }
 
-    window.onload = () => changeMode('us');
+    window.onload = () => {
+      changeMode('us');
+      renderThumbnails();
+    };
   </script>
 </body>
 </html>
