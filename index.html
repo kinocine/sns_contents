@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>SNS 숏폼 콘텐츠 메이커 (FB / IG / Shorts)</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; }
+    body { background: #121212; color: #e0e0e0; display: flex; height: 100vh; overflow: hidden; }
+    
+    /* 좌측 입력/컨트롤 패널 */
+    #sidebar { width: 440px; background: #1e1e1e; padding: 20px; overflow-y: auto; border-right: 1px solid #333; display: flex; flex-direction: column; gap: 15px; }
+    h2 { font-size: 1.2rem; color: #fff; margin-bottom: 5px; }
+    label { font-size: 0.85rem; color: #aaa; margin-bottom: 4px; display: block; }
+    input[type="text"], textarea { width: 100%; background: #2a2a2a; border: 1px solid #444; color: #fff; padding: 10px; border-radius: 6px; font-size: 0.9rem; }
+    textarea { resize: vertical; height: 120px; line-height: 1.4; }
+    
+    .btn-group { display: flex; gap: 8px; }
+    button { cursor: pointer; border: none; border-radius: 6px; padding: 10px 14px; font-weight: bold; font-size: 0.9rem; transition: 0.2s; }
+    .btn-primary { background: #ff0055; color: #fff; flex: 1; }
+    .btn-primary:hover { background: #d90048; }
+    .btn-secondary { background: #333; color: #eee; }
+    .btn-secondary:hover { background: #444; }
+    .btn-download { background: #00ba7c; color: #fff; width: 100%; font-size: 1rem; padding: 12px; }
+    .btn-download:hover { background: #009664; }
+    .btn-download:disabled { background: #444; color: #888; cursor: not-allowed; }
+
+    /* 파일 선택 */
+    .file-box { border: 2px dashed #444; border-radius: 6px; padding: 15px; text-align: center; cursor: pointer; background: #252525; }
+    .file-box:hover { border-color: #ff0055; }
+
+    /* 우측 프리뷰 영역 */
+    #preview-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; padding: 20px; background: #0a0a0a; }
+    .phone-frame {
+      width: 360px;
+      height: 640px; /* 9:16 모바일 뷰 비율 */
+      background: #000;
+      border-radius: 20px;
+      box-shadow: 0 0 30px rgba(0,0,0,0.8), 0 0 0 8px #222;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    canvas { width: 100%; height: 100%; display: block; object-fit: cover; }
+    
+    .status-bar { margin-top: 15px; font-size: 0.85rem; color: #888; }
+    .progress-bar { width: 360px; height: 6px; background: #222; border-radius: 3px; overflow: hidden; margin-top: 8px; }
+    .progress-fill { width: 0%; height: 100%; background: #ff0055; transition: width 0.1s; }
+  </style>
+</head>
+<body>
+
+  <!-- 컨트롤 패널 -->
+  <div id="sidebar">
+    <h2>🎬 SNS 숏폼 비디오 생성기</h2>
+    
+    <div>
+      <label>1. 콘텐츠 제목</label>
+      <input type="text" id="titleInput" value="이창동 감독 '가능한 사랑'">
+    </div>
+
+    <div>
+      <label>2. 기사 및 리뷰 원문 (자동 5장 분할)</label>
+      <textarea id="articleInput">이창동 감독의 신작 '가능한 사랑'은 삶의 균열 속에서 피어나는 사랑의 본질을 묻는다.
+치밀한 심리 묘사와 배우들의 강렬한 연기가 숨 막히는 긴장감을 선사한다.
+일상의 작은 틈새를 파고드는 날카로운 시선은 깊은 여운을 남긴다.
+감독 특유의 리얼리즘과 인간에 대한 깊은 연민이 스크린 가득 펼쳐진다.
+질문은 무겁고 울림은 길다. 극장에서 반드시 확인해야 할 올해의 수작이다.</textarea>
+    </div>
+
+    <div>
+      <label>3. 스틸컷 및 영상 선택 (최대 5장 권장)</label>
+      <input type="file" id="mediaInput" accept="image/*,video/*" multiple style="display: none;">
+      <div class="file-box" onclick="document.getElementById('mediaInput').click()">
+        클릭하여 이미지나 영상을 선택하세요<br>
+        <span id="fileCount" style="font-size:0.75rem; color:#aaa;">(미선택 시 기본 배경으로 생성)</span>
+      </div>
+    </div>
+
+    <div>
+      <label>씬당 표시 시간 (초)</label>
+      <input type="number" id="durationInput" value="3.5" min="1" max="10" step="0.5">
+    </div>
+
+    <div class="btn-group">
+      <button class="btn-primary" onclick="startPreview()">▶ 미리보기 재생</button>
+      <button class="btn-secondary" onclick="stopPreview()">■ 정지</button>
+    </div>
+
+    <button id="renderBtn" class="btn-download" onclick="startRecording()">📥 영상 내보내기 (.webm/mp4)</button>
+  </div>
+
+  <!-- 프리뷰 모니터 -->
+  <div id="preview-area">
+    <div class="phone-frame">
+      <canvas id="videoCanvas" width="1080" height="1920"></canvas>
+    </div>
+    <div class="status-bar" id="statusText">대기 중... 미리보기를 눌러 확인하세요.</div>
+    <div class="progress-bar">
+      <div id="progressFill" class="progress-fill"></div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('videoCanvas');
+    const ctx = canvas.getContext('2d');
+    let loadedMedia = [];
+    let isPlaying = false;
+    let animId = null;
+    let mediaRecorder = null;
+    let recordedChunks = [];
+
+    // 파일 로드 이벤트
+    document.getElementById('mediaInput').addEventListener('change', function(e) {
+      const files = Array.from(e.target.files);
+      loadedMedia = [];
+      document.getElementById('fileCount').innerText = `${files.length}개 파일 선택됨`;
+      
+      files.forEach(file => {
+        const url = URL.createObjectURL(file);
+        if (file.type.startsWith('image/')) {
+          const img = new Image();
+          img.src = url;
+          loadedMedia.push({ type: 'image', element: img });
+        } else if (file.type.startsWith('video/')) {
+          const vid = document.createElement('video');
+          vid.src = url;
+          vid.muted = true;
+          vid.playsInline = true;
+          vid.loop = true;
+          loadedMedia.push({ type: 'video', element: vid });
+        }
+      });
+      // 1초 뒤 첫 씬 그리기
+      setTimeout(() => drawFrame(0, 0), 300);
+    });
+
+    // 텍스트를 문장 단위 5개로 분할
+    function getScenes() {
+      const title = document.getElementById('titleInput').value.trim();
+      const rawText = document.getElementById('articleInput').value.trim();
+      const sentences = rawText.split(/\n|\.\s+/).map(s => s.trim()).filter(s => s.length > 0);
+      
+      const count = Math.max(5, loadedMedia.length || 5);
+      const scenes = [];
+      
+      for (let i = 0; i < count; i++) {
+        scenes.push({
+          title: title,
+          subtitle: `POINT 0${i + 1}`,
+          body: sentences[i] ? sentences[i] + (sentences[i].endsWith('.') ? '' : '.') : "",
+          media: loadedMedia[i] || null
+        });
+      }
+      return scenes;
+    }
+
+    // 캔버스 그리기 함수
+    function drawFrame(sceneIdx, sceneProgress) {
+      const scenes = getScenes();
+      const scene = scenes[sceneIdx];
+      if (!scene) return;
+
+      const W = canvas.width;
+      const H = canvas.height;
+
+      // 1. 배경 그리기 (블러 효과 시뮬레이션)
+      ctx.fillStyle = "#111111";
+      ctx.fillRect(0, 0, W, H);
+
+      if (scene.media) {
+        const el = scene.media.element;
+        if (scene.media.type === 'video' && el.paused && isPlaying) {
+          el.play();
+        }
+
+        // 블러 배경 (확대하여 꽉 채운 후 어둡게 처리)
+        ctx.save();
+        ctx.filter = 'blur(40px) brightness(0.4)';
+        drawImageProp(ctx, el, 0, 0, W, H);
+        ctx.restore();
+
+        // 중앙 전경 이미지 (원본 비율 유지)
+        drawImageProp(ctx, el, 60, H * 0.22, W - 120, H * 0.52);
+      } else {
+        // 미디어가 없을 때 그라디언트 기본 배경
+        const grad = ctx.createLinearGradient(0, 0, 0, H);
+        grad.addColorStop(0, '#1c1c24');
+        grad.addColorStop(1, '#050508');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, W, H);
+      }
+
+      // 2. 상단 타이틀 렌더링
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = 'bold 50px sans-serif';
+      ctx.shadowColor = 'rgba(0,0,0,0.8)';
+      ctx.shadowBlur = 12;
+      ctx.fillText(scene.title, W / 2, 220);
+
+      ctx.fillStyle = '#FF0055';
+      ctx.font = 'bold 36px sans-serif';
+      ctx.fillText(`── ${scene.subtitle} ──`, W / 2, 280);
+
+      // 3. 하단 자막 렌더링 (반투명 백그라운드 바)
+      if (scene.body) {
+        ctx.save();
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
+        ctx.fillRect(80, H - 460, W - 160, 240);
+        ctx.restore();
+
+        ctx.fillStyle = '#FFE600';
+        ctx.font = 'bold 44px sans-serif';
+        wrapText(ctx, scene.body, W / 2, H - 340, W - 240, 60);
+      }
+    }
+
+    // 이미지 비율 유지 채우기 유틸
+    function drawImageProp(ctx, img, x, y, w, h) {
+      const nw = img.videoWidth || img.naturalWidth || w;
+      const nh = img.videoHeight || img.naturalHeight || h;
+      const r = Math.min(w / nw, h / nh);
+      let nw2 = nw * r, nh2 = nh * r;
+      let cx = (w - nw2) / 2, cy = (h - nh2) / 2;
+      ctx.drawImage(img, 0, 0, nw, nh, x + cx, y + cy, nw2, nh2);
+    }
+
+    // 자막 자동 줄바꿈
+    function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+      const words = text.split(' ');
+      let line = '';
+      let currentY = y;
+      for (let n = 0; n < words.length; n++) {
+        const testLine = line + words[n] + ' ';
+        const metrics = ctx.measureText(testLine);
+        if (metrics.width > maxWidth && n > 0) {
+          ctx.fillText(line, x, currentY);
+          line = words[n] + ' ';
+          currentY += lineHeight;
+        } else {
+          line = testLine;
+        }
+      }
+      ctx.fillText(line, x, currentY);
+    }
+
+    // 프리뷰 재생 엔진
+    function startPreview() {
+      stopPreview();
+      isPlaying = true;
+      const scenes = getScenes();
+      const duration = parseFloat(document.getElementById('durationInput').value) * 1000;
+      let startTime = performance.now();
+
+      function loop(now) {
+        if (!isPlaying) return;
+        const elapsed = now - startTime;
+        const totalDuration = duration * scenes.length;
+        const currentProgress = (elapsed % totalDuration) / totalDuration;
+        
+        const sceneIdx = Math.floor((elapsed % totalDuration) / duration);
+        const sceneProgress = ((elapsed % totalDuration) % duration) / duration;
+
+        drawFrame(sceneIdx, sceneProgress);
+
+        document.getElementById('progressFill').style.width = (currentProgress * 100) + '%';
+        document.getElementById('statusText').innerText = `재생 중: 씬 ${sceneIdx + 1} / ${scenes.length}`;
+
+        animId = requestAnimationFrame(loop);
+      }
+      animId = requestAnimationFrame(loop);
+    }
+
+    function stopPreview() {
+      isPlaying = false;
+      if (animId) cancelAnimationFrame(animId);
+      document.getElementById('progressFill').style.width = '0%';
+      document.getElementById('statusText').innerText = '정지됨';
+      getScenes().forEach(s => {
+        if (s.media && s.media.type === 'video') s.media.element.pause();
+      });
+    }
+
+    // 실제 비디오 녹화 & 다운로드 기능 (Canvas MediaStream Recording)
+    async function startRecording() {
+      stopPreview();
+      const scenes = getScenes();
+      const duration = parseFloat(document.getElementById('durationInput').value) * 1000;
+      const totalDuration = duration * scenes.length;
+
+      const stream = canvas.captureStream(30); // 30 FPS
+      recordedChunks = [];
+      
+      const options = { mimeType: 'video/webm; codecs=vp9' };
+      try {
+        mediaRecorder = new MediaRecorder(stream, options);
+      } catch (e) {
+        mediaRecorder = new MediaRecorder(stream);
+      }
+
+      mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(recordedChunks, { type: 'video/webm' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${document.getElementById('titleInput').value.replace(/[^a-zA-Z0-9가-힣]/g, '_')}_shorts.webm`;
+        a.click();
+        document.getElementById('renderBtn').disabled = false;
+        document.getElementById('statusText').innerText = '내보내기 완료!';
+      };
+
+      document.getElementById('renderBtn').disabled = true;
+      mediaRecorder.start();
+      isPlaying = true;
+      let startRecTime = performance.now();
+
+      function recordLoop(now) {
+        const elapsed = now - startRecTime;
+        if (elapsed >= totalDuration) {
+          mediaRecorder.stop();
+          isPlaying = false;
+          return;
+        }
+
+        const sceneIdx = Math.floor(elapsed / duration);
+        const sceneProgress = (elapsed % duration) / duration;
+        drawFrame(sceneIdx, sceneProgress);
+
+        document.getElementById('progressFill').style.width = ((elapsed / totalDuration) * 100) + '%';
+        document.getElementById('statusText').innerText = `녹화 렌더링 중: ${(elapsed / 1000).toFixed(1)}s / ${(totalDuration / 1000).toFixed(1)}s`;
+
+        requestAnimationFrame(recordLoop);
+      }
+      requestAnimationFrame(recordLoop);
+    }
+
+    // 초기 화면
+    window.onload = () => drawFrame(0, 0);
+  </script>
+</body>
+</html>
