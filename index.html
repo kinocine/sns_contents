@@ -7,15 +7,11 @@
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; }
     body { background: #0f1015; color: #e2e8f0; display: flex; height: 100vh; overflow: hidden; }
     
-    #sidebar { width: 460px; background: #181920; padding: 20px; overflow-y: auto; border-right: 1px solid #272832; display: flex; flex-direction: column; gap: 13px; }
-    h2 { font-size: 1.15rem; color: #fff; }
-    label { font-size: 0.85rem; color: #94a3b8; margin-bottom: 4px; display: block; font-weight: 500; }
+    #sidebar { width: 460px; background: #181920; padding: 22px; overflow-y: auto; border-right: 1px solid #272832; display: flex; flex-direction: column; gap: 14px; }
+    h2 { font-size: 1.18rem; color: #fff; display: flex; align-items: center; gap: 8px; }
+    label { font-size: 0.84rem; color: #94a3b8; margin-bottom: 4px; display: block; font-weight: 500; }
     input[type="text"], input[type="number"], select, textarea { width: 100%; background: #22232e; border: 1px solid #333547; color: #fff; padding: 9px; border-radius: 6px; font-size: 0.88rem; }
     textarea { resize: vertical; height: 90px; line-height: 1.4; }
-
-    /* 1. 작업 기준 폴더 영역 */
-    .folder-box { background: #1e2230; border: 1px solid #2e3852; padding: 12px; border-radius: 8px; }
-    .folder-status { font-size: 0.82rem; color: #38bdf8; margin-top: 5px; word-break: break-all; }
 
     /* 프리뷰 플랫폼 탭 */
     .tab-group { display: flex; gap: 6px; background: #22232e; padding: 4px; border-radius: 8px; border: 1px solid #333547; }
@@ -37,15 +33,16 @@
     .thumb-del { position: absolute; top: 2px; right: 2px; background: rgba(255,0,0,0.85); color: #fff; width: 16px; height: 16px; border-radius: 50%; font-size: 0.7rem; line-height: 15px; text-align: center; cursor: pointer; }
     .thumb-type { position: absolute; bottom: 2px; right: 2px; background: #ff0055; color: #fff; font-size: 0.6rem; padding: 1px 3px; border-radius: 2px; font-weight: bold; }
 
-    /* 저장 플랫폼 타겟 선택 버튼 (기본: All) */
+    /* 시간 설정 2열 */
+    .time-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    /* 저장 플랫폼 타겟 선택 */
     .target-group { display: flex; gap: 6px; }
     .target-btn { flex: 1; padding: 8px 0; background: #20222c; border: 1px solid #3b3f54; border-radius: 6px; color: #cbd5e1; font-size: 0.8rem; font-weight: bold; cursor: pointer; text-align: center; }
     .target-btn.active { background: #38bdf8; color: #000; border-color: #38bdf8; }
 
     .btn-group { display: flex; gap: 8px; }
     button.action-btn { cursor: pointer; border: none; border-radius: 6px; padding: 11px 14px; font-weight: bold; font-size: 0.9rem; transition: 0.2s; }
-    .btn-dir { background: #334155; color: #f1f5f9; width: 100%; }
-    .btn-dir:hover { background: #475569; }
     .btn-preview { background: #3b82f6; color: #fff; flex: 1; }
     .btn-preview:hover { background: #2563eb; }
     .btn-stop { background: #2d303e; color: #eee; }
@@ -53,7 +50,7 @@
     .btn-render-all { background: linear-gradient(135deg, #ff0055, #ff5500); color: #fff; width: 100%; font-size: 0.95rem; padding: 13px; border-radius: 8px; box-shadow: 0 4px 15px rgba(255,0,85,0.3); }
     .btn-render-all:disabled { background: #333; color: #777; cursor: not-allowed; box-shadow: none; }
 
-    /* 프리뷰 뷰포트 영역 */
+    /* 프리뷰 뷰포트 */
     #preview-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; padding: 20px; background: #08090c; }
     .monitor-container {
       display: flex; align-items: center; justify-content: center; background: #000; border-radius: 14px;
@@ -66,7 +63,7 @@
     .view-fb { width: 360px; height: 450px; } /* 4:5 페이스북 피드 */
 
     canvas { width: 100%; height: 100%; display: block; object-fit: cover; }
-    .status-bar { margin-top: 15px; font-size: 0.85rem; color: #94a3b8; text-align: center; }
+    .status-bar { margin-top: 15px; font-size: 0.88rem; color: #38bdf8; text-align: center; line-height: 1.4; }
     .progress-bar { width: 360px; height: 6px; background: #1e2230; border-radius: 3px; overflow: hidden; margin-top: 8px; }
     .progress-fill { width: 0%; height: 100%; background: #ff0055; transition: width 0.1s; }
   </style>
@@ -75,15 +72,8 @@
 
   <div id="sidebar">
     <h2>🎬 SNS 멀티 포맷 생성기</h2>
-    
-    <!-- 1. 기준 디렉토리 지정 (C:\sns_contents) -->
-    <div class="folder-box">
-      <label style="color:#38bdf8; font-weight:bold;">📁 1. 기준 디렉토리 지정 (C:\sns_contents)</label>
-      <button type="button" class="action-btn btn-dir" onclick="selectRootDirectory()">폴더 선택하기</button>
-      <div id="folderStatus" class="folder-status">선택 안 됨 (C:\sns_contents 선택)</div>
-    </div>
 
-    <!-- 미리보기 화면 비율 탭 -->
+    <!-- 미리보기 플랫폼 탭 -->
     <div>
       <label>프리뷰 플랫폼 선택</label>
       <div class="tab-group">
@@ -107,16 +97,6 @@
 질문은 무겁고 울림은 길다. 극장에서 반드시 확인해야 할 올해의 수작이다.</textarea>
     </div>
 
-    <!-- [검증된 알고리즘 복원] 목/머리 잘림 방지 구도 맞춤 방식 -->
-    <div>
-      <label style="color:#f43f5e; font-weight:bold;">🖼️ 이미지 구도 맞춤 방식</label>
-      <select id="fitModeSelect" onchange="drawFrame(0, 0, currentMode)">
-        <option value="contain_blur" selected>전체 화면 보존 (팔/머리 100% 노출 + 여백 블러)</option>
-        <option value="smart_top">인물 상단 우선 (머리/얼굴 안 잘리게)</option>
-        <option value="cover_center">기존 중앙 꽉 채우기 (배경/풍경 사진용)</option>
-      </select>
-    </div>
-
     <!-- 스틸컷 & 영상 순서 배치 (드래그 앤 드롭) -->
     <div>
       <label>스틸컷 & 영상 (드래그하여 순서 변경)</label>
@@ -127,34 +107,35 @@
       <div id="thumbList" class="thumb-container" style="margin-top: 6px;"></div>
     </div>
 
-    <!-- 동영상 앞부분 최대 사용 시간(초) 트리밍 -->
-    <div style="display:flex; gap:10px; align-items:center; background:#20222c; padding:8px 10px; border-radius:6px;">
-      <label style="margin:0; font-size:0.8rem; color:#aaa; flex:1;">동영상 앞부분 최대 사용 시간(초):</label>
-      <input type="number" id="videoMaxSec" value="10" min="1" max="60" style="width:70px; padding:4px 8px;">
+    <!-- 스틸과 동영상 시간 완전 분리 -->
+    <div class="time-grid">
+      <div>
+        <label>스틸 노출 시간 (초)</label>
+        <input type="number" id="stillDurationInput" value="3.5" min="1" max="15" step="0.5">
+      </div>
+      <div>
+        <label style="color:#38bdf8; font-weight:bold;">동영상 재생 시간 (초)</label>
+        <input type="number" id="videoDurationInput" value="10.0" min="2" max="60" step="1.0">
+      </div>
     </div>
 
     <!-- 배경음악 설정 -->
     <div>
       <label>배경음악 (오디오)</label>
       <select id="bgmModeSelect" onchange="toggleBgmInput()">
-        <option value="synth" selected>기본 잔잔한 앰비언트 BGM (자동 생성)</option>
+        <option value="synth" selected>기본 잔잔한 앰비언트 BGM (자동 연주 / 자동 합성)</option>
         <option value="custom">내 MP3 파일 직접 선택</option>
         <option value="none">무음</option>
       </select>
       <input type="file" id="bgmFileInput" accept="audio/*" style="display:none; margin-top:6px;">
     </div>
 
-    <div>
-      <label>장면당 표시 시간 (초)</label>
-      <input type="number" id="durationInput" value="3.5" min="1" max="10" step="0.5">
-    </div>
-
     <div class="btn-group">
-      <button class="action-btn btn-preview" onclick="startPreview()">▶ 미리보기</button>
+      <button class="action-btn btn-preview" onclick="startPreview()">▶ 소리 들으며 미리보기</button>
       <button class="action-btn btn-stop" onclick="stopPreview()">■ 정지</button>
     </div>
 
-    <!-- 저장할 플랫폼 선택 (FB / IS / 쇼츠 / All, 디폴트: All) -->
+    <!-- 저장할 플랫폼 선택 (기본: All) -->
     <div>
       <label>저장할 플랫폼 선택</label>
       <div class="target-group">
@@ -165,15 +146,15 @@
       </div>
     </div>
 
-    <!-- C:\sns_contents\[제목]_[날짜] 폴더 자동 생성 및 저장 버튼 -->
-    <button id="renderBtn" class="action-btn btn-render-all" onclick="executeRender()">🚀 [콘텐츠제목_날짜] 폴더 자동 생성 및 저장</button>
+    <!-- 저장 버튼: 클릭 즉시 윈도우 폴더 창 호출 -->
+    <button id="renderBtn" class="action-btn btn-render-all" onclick="executeRender()">🚀 영상 생성 및 저장 (C:\sns_contents)</button>
   </div>
 
   <div id="preview-area">
     <div id="monitor" class="monitor-container view-us">
       <canvas id="videoCanvas" width="1080" height="1920"></canvas>
     </div>
-    <div class="status-bar" id="statusText">대기 중...</div>
+    <div class="status-bar" id="statusText">준비 완료. 사진/영상을 넣고 미리보기를 해보세요.</div>
     <div class="progress-bar">
       <div id="progressFill" class="progress-fill"></div>
     </div>
@@ -181,13 +162,13 @@
 
   <script>
     const PLATFORMS = {
-      us: { name: '유튜브쇼츠', prefix: 'us_', width: 1080, height: 1920, className: 'view-us' },
-      is: { name: '인스타그램', prefix: 'is_', width: 1080, height: 1080, className: 'view-is' },
-      fb: { name: '페이스북',   prefix: 'fb_', width: 1080, height: 1350, className: 'view-fb' }
+      us: { name: '유튜브쇼츠', prefix: 'us', width: 1080, height: 1920, className: 'view-us' },
+      is: { name: '인스타그램', prefix: 'in', width: 1080, height: 1080, className: 'view-is' },
+      fb: { name: '페이스북',   prefix: 'fb', width: 1080, height: 1350, className: 'view-fb' }
     };
 
     let currentMode = 'us';
-    let exportTarget = 'all'; // 기본값: All
+    let exportTarget = 'all';
     const canvas = document.getElementById('videoCanvas');
     const ctx = canvas.getContext('2d');
     const monitor = document.getElementById('monitor');
@@ -198,16 +179,8 @@
     let rootDirHandle = null;
     let bgmAudioEl = null;
 
-    // 1. 기준 디렉토리 (C:\sns_contents) 선택
-    async function selectRootDirectory() {
-      try {
-        rootDirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
-        document.getElementById('folderStatus').innerText = `연동됨: [${rootDirHandle.name}] 하위에 폴더 자동 생성`;
-        document.getElementById('folderStatus').style.color = '#38bdf8';
-      } catch (err) {
-        if (err.name !== 'AbortError') alert('폴더 접근 권한을 획득하지 못했습니다.');
-      }
-    }
+    let previewAudioCtx = null;
+    let previewOscillators = [];
 
     function changeMode(mode) {
       currentMode = mode;
@@ -227,9 +200,9 @@
 
       const renderBtn = document.getElementById('renderBtn');
       if (target === 'all') {
-        renderBtn.innerText = '🚀 [콘텐츠제목_날짜] 폴더에 3종 일괄 생성 및 저장';
+        renderBtn.innerText = '🚀 3종 일괄 생성 및 저장 (날짜시간_fb/in/us)';
       } else {
-        renderBtn.innerText = `🚀 [콘텐츠제목_날짜] 폴더에 ${PLATFORMS[target].name} 단독 생성 및 저장`;
+        renderBtn.innerText = `🚀 ${PLATFORMS[target].name} 생성 및 저장 (날짜시간_${PLATFORMS[target].prefix})`;
       }
     }
 
@@ -243,7 +216,6 @@
       if (file) bgmAudioEl = new Audio(URL.createObjectURL(file));
     });
 
-    // 2. 미디어 파일 로드 & 썸네일
     document.getElementById('mediaInput').addEventListener('change', function(e) {
       const files = Array.from(e.target.files);
       files.forEach(file => {
@@ -274,7 +246,7 @@
       const container = document.getElementById('thumbList');
       container.innerHTML = "";
       if (loadedMedia.length === 0) {
-        container.innerHTML = `<span style="font-size:0.75rem; color:#64748b; margin:auto;">등록된 미디어 없음 (기본 템플릿 사용)</span>`;
+        container.innerHTML = `<span style="font-size:0.75rem; color:#64748b; margin:auto;">등록된 미디어 없음 (기본 배경 사용)</span>`;
         return;
       }
 
@@ -302,7 +274,7 @@
 
         const typeBadge = document.createElement('div');
         typeBadge.className = 'thumb-type';
-        typeBadge.innerText = item.type === 'video' ? 'VIDEO' : 'IMG';
+        typeBadge.innerText = item.type === 'video' ? '동영상' : '스틸';
         card.appendChild(typeBadge);
 
         const delBtn = document.createElement('div');
@@ -355,52 +327,54 @@
       const rawText = document.getElementById('articleInput').value.trim();
       const sentences = rawText.split(/\n|\.\s+/).map(s => s.trim()).filter(s => s.length > 0);
       const count = Math.max(5, loadedMedia.length || 5);
-      const scenes = [];
       
+      const stillSec = parseFloat(document.getElementById('stillDurationInput').value) || 3.5;
+      const videoSec = parseFloat(document.getElementById('videoDurationInput').value) || 10.0;
+
+      const scenes = [];
       for (let i = 0; i < count; i++) {
+        const mediaItem = loadedMedia[i] || null;
+        const dur = (mediaItem && mediaItem.type === 'video') ? videoSec : stillSec;
+
         scenes.push({
           title: title,
           subtitle: `KEY POINT 0${i + 1}`,
           body: sentences[i] ? sentences[i] + (sentences[i].endsWith('.') ? '' : '.') : "",
-          media: loadedMedia[i] || null
+          media: mediaItem,
+          duration: dur
         });
       }
       return scenes;
     }
 
-    // [완전 복원] 검증된 원본 smartImage 처리 함수
-    function drawSmartImage(ctx, img, w, h, fitMode) {
+    // [핵심] 인스타(1:1)/쇼츠(9:16)/페북(4:5) 어떤 포맷이든 머리/팔/다리 절대 안 잘리는 스마트 오토 핏
+    function drawSmartAutoFit(ctx, img, w, h, mode) {
       const nw = img.videoWidth || img.naturalWidth || w;
       const nh = img.videoHeight || img.naturalHeight || h;
 
-      if (fitMode === 'contain_blur') {
-        // 1) 배경 블러 꽉 채우기
-        ctx.save();
-        ctx.filter = 'blur(35px) brightness(0.4)';
-        const rBg = Math.max(w / nw, h / nh);
-        ctx.drawImage(img, (w - nw * rBg) / 2, (h - nh * rBg) / 2, nw * rBg, nh * rBg);
-        ctx.restore();
+      // 1) 배경: 화면 전체를 꽉 채우고 어두운 시네마틱 블러 처리 (여백 제로)
+      ctx.save();
+      ctx.filter = 'blur(40px) brightness(0.38)';
+      const rBg = Math.max(w / nw, h / nh);
+      ctx.drawImage(img, (w - nw * rBg) / 2, (h - nh * rBg) / 2, nw * rBg, nh * rBg);
+      ctx.restore();
 
-        // 2) 전경 이미지: 비율 온전히 보존 (머리/목/팔/다리 절대 안 잘림)
-        const rFg = Math.min(w / nw, h / nh);
-        const fw = nw * rFg, fh = nh * rFg;
-        ctx.drawImage(img, (w - fw) / 2, (h - fh) / 2, fw, fh);
+      // 2) 전경: 상하단 자막 공간을 제외한 안전 영역(Safe Area) 안에 인물 원본 비율 100% 온전히 보존
+      // 인스타(1:1)는 높이가 낮으므로 가용 높이를 66%, 쇼츠/페북은 62%로 정밀 계산
+      const safeHeightRatio = (mode === 'is') ? 0.66 : 0.62;
+      const maxTargetW = w * 0.96;
+      const maxTargetH = h * safeHeightRatio;
 
-      } else if (fitMode === 'smart_top') {
-        // 상단 기준 정렬
-        const r = Math.max(w / nw, h / nh);
-        const nw2 = nw * r;
-        const nh2 = nh * r;
-        const cx = (w - nw2) / 2;
-        const cy = Math.min(0, Math.max(h - nh2, (h * 0.12)));
-        ctx.drawImage(img, cx, cy, nw2, nh2);
+      const scale = Math.min(maxTargetW / nw, maxTargetH / nh);
+      const targetW = nw * scale;
+      const targetH = nh * scale;
 
-      } else {
-        // 기존 중앙 꽉 채우기
-        const r = Math.max(w / nw, h / nh);
-        const nw2 = nw * r, nh2 = nh * r;
-        ctx.drawImage(img, (w - nw2) / 2, (h - nh2) / 2, nw2, nh2);
-      }
+      const posX = (w - targetW) / 2;
+      // 상단 타이틀 바로 아래, 하단 자막 바로 위에 완벽한 황금 비율 중앙 안착
+      const topBoundary = (mode === 'is') ? 140 : 210;
+      const posY = topBoundary + (maxTargetH - targetH) / 2;
+
+      ctx.drawImage(img, posX, posY, targetW, targetH);
     }
 
     function drawFrame(sceneIdx, sceneProgress, mode) {
@@ -410,65 +384,64 @@
 
       const W = canvas.width;
       const H = canvas.height;
-      const fitMode = document.getElementById('fitModeSelect').value;
 
       ctx.fillStyle = "#0c0d12";
       ctx.fillRect(0, 0, W, H);
 
-      // 1. 미디어 그리기 (동영상 앞부분 최대 시간 트리밍)
+      // 1. 미디어 그리기
       if (scene.media) {
         const el = scene.media.element;
         if (scene.media.type === 'video') {
-          const maxSec = parseFloat(document.getElementById('videoMaxSec').value) || 10;
-          const sceneDur = parseFloat(document.getElementById('durationInput').value) || 3.5;
-          const targetTime = (sceneProgress * Math.min(sceneDur, maxSec)) % maxSec;
-          
+          const targetTime = sceneProgress * scene.duration;
           if (isPlaying) {
-            if (Math.abs(el.currentTime - targetTime) > 0.3) {
+            if (Math.abs(el.currentTime - targetTime) > 0.4) {
               el.currentTime = targetTime;
             }
             if (el.paused) el.play();
           }
         }
-        drawSmartImage(ctx, el, W, H, fitMode);
+        drawSmartAutoFit(ctx, el, W, H, mode);
       }
 
       // 2. 상하단 시네마틱 섀도우 그라디언트
-      const topGrad = ctx.createLinearGradient(0, 0, 0, H * 0.22);
-      topGrad.addColorStop(0, 'rgba(0, 0, 0, 0.85)');
+      const topGradHeight = (mode === 'is') ? H * 0.22 : H * 0.20;
+      const topGrad = ctx.createLinearGradient(0, 0, 0, topGradHeight);
+      topGrad.addColorStop(0, 'rgba(0, 0, 0, 0.88)');
       topGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
       ctx.fillStyle = topGrad;
-      ctx.fillRect(0, 0, W, H * 0.22);
+      ctx.fillRect(0, 0, W, topGradHeight);
 
-      const botGrad = ctx.createLinearGradient(0, H * 0.6, 0, H);
+      const botGradStart = (mode === 'is') ? H * 0.72 : H * 0.65;
+      const botGrad = ctx.createLinearGradient(0, botGradStart, 0, H);
       botGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
-      botGrad.addColorStop(0.35, 'rgba(0, 0, 0, 0.65)');
+      botGrad.addColorStop(0.35, 'rgba(0, 0, 0, 0.70)');
       botGrad.addColorStop(1, 'rgba(0, 0, 0, 0.95)');
       ctx.fillStyle = botGrad;
-      ctx.fillRect(0, H * 0.6, W, H * 0.4);
+      ctx.fillRect(0, botGradStart, W, H - botGradStart);
 
       // 3. 상단 제목
       ctx.textAlign = 'center';
       ctx.fillStyle = '#FFFFFF';
-      ctx.font = 'bold 44px sans-serif';
-      ctx.shadowColor = 'rgba(0,0,0,0.9)';
+      ctx.font = (mode === 'is') ? 'bold 42px sans-serif' : 'bold 46px sans-serif';
+      ctx.shadowColor = 'rgba(0,0,0,0.95)';
       ctx.shadowBlur = 10;
       
-      const topOffset = mode === 'is' ? 90 : 140;
+      const topOffset = (mode === 'is') ? 75 : 130;
       ctx.fillText(scene.title, W / 2, topOffset);
 
       ctx.fillStyle = '#FF3366';
-      ctx.font = 'bold 28px sans-serif';
-      ctx.fillText(`── ${scene.subtitle} ──`, W / 2, topOffset + 44);
+      ctx.font = (mode === 'is') ? 'bold 26px sans-serif' : 'bold 28px sans-serif';
+      ctx.fillText(`── ${scene.subtitle} ──`, W / 2, topOffset + 42);
 
       // 4. 하단 자막
       if (scene.body) {
         ctx.shadowBlur = 12;
         ctx.fillStyle = '#FFFFFF';
-        ctx.font = 'bold 42px sans-serif';
+        ctx.font = (mode === 'is') ? 'bold 38px sans-serif' : 'bold 42px sans-serif';
 
-        const bottomOffset = mode === 'is' ? H - 180 : H - 300;
-        wrapText(ctx, scene.body, W / 2, bottomOffset, W - 160, 60);
+        const bottomOffset = (mode === 'is') ? H - 140 : H - 280;
+        const lineSpacing = (mode === 'is') ? 52 : 60;
+        wrapText(ctx, scene.body, W / 2, bottomOffset, W - 140, lineSpacing);
       }
     }
 
@@ -492,64 +465,96 @@
       }
     }
 
-    function createAmbientAudio(audioContext, totalSec) {
-      const dest = audioContext.createMediaStreamDestination();
-      const chords = [
-        [220.00, 261.63, 329.63],
-        [174.61, 220.00, 261.63],
-        [261.63, 329.63, 392.00],
-        [196.00, 246.94, 293.66]
+    // [BGM] 앰비언트 사운드 엔진
+    function buildAmbientTrack(audioContext, totalSec, outputNode) {
+      const chordProgression = [
+        [220.00, 261.63, 329.63, 440.00], // Am
+        [174.61, 220.00, 261.63, 349.23], // F
+        [261.63, 329.63, 392.00, 523.25], // C
+        [196.00, 246.94, 293.66, 392.00]  // G
       ];
 
       const masterGain = audioContext.createGain();
-      masterGain.gain.setValueAtTime(0.18, audioContext.currentTime);
-      masterGain.connect(dest);
+      masterGain.gain.setValueAtTime(0.42, audioContext.currentTime);
+      masterGain.connect(outputNode);
 
-      let now = audioContext.currentTime;
-      let chordIdx = 0;
-      while (now < audioContext.currentTime + totalSec) {
-        const notes = chords[chordIdx % chords.length];
-        notes.forEach(freq => {
+      let curTime = audioContext.currentTime;
+      let step = 0;
+      const oscillators = [];
+
+      while (curTime < audioContext.currentTime + totalSec + 4) {
+        const chord = chordProgression[step % chordProgression.length];
+        chord.forEach((freq, idx) => {
           const osc = audioContext.createOscillator();
           const gain = audioContext.createGain();
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(freq, now);
+          
+          osc.type = idx % 2 === 0 ? 'sine' : 'triangle';
+          osc.frequency.setValueAtTime(freq, curTime);
 
-          gain.gain.setValueAtTime(0.001, now);
-          gain.gain.exponentialRampToValueAtTime(0.08, now + 0.8);
-          gain.gain.exponentialRampToValueAtTime(0.0001, now + 3.8);
+          gain.gain.setValueAtTime(0.001, curTime);
+          gain.gain.linearRampToValueAtTime(0.12, curTime + 0.3);
+          gain.gain.linearRampToValueAtTime(0.04, curTime + 2.8);
+          gain.gain.linearRampToValueAtTime(0.001, curTime + 3.4);
 
           osc.connect(gain);
           gain.connect(masterGain);
-          osc.start(now);
-          osc.stop(now + 4.0);
+
+          osc.start(curTime);
+          osc.stop(curTime + 3.5);
+          oscillators.push(osc);
         });
-        now += 3.5;
-        chordIdx++;
+
+        curTime += 3.2;
+        step++;
       }
-      return dest.stream.getAudioTracks()[0];
+      return oscillators;
     }
 
-    function startPreview() {
+    async function startPreview() {
       stopPreview();
       isPlaying = true;
       const scenes = getScenes();
-      const duration = parseFloat(document.getElementById('durationInput').value) * 1000;
+      const totalDuration = scenes.reduce((acc, s) => acc + (s.duration * 1000), 0);
+      const totalSec = totalDuration / 1000;
+
+      const bgmMode = document.getElementById('bgmModeSelect').value;
+      if (bgmMode === 'synth') {
+        previewAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (previewAudioCtx.state === 'suspended') {
+          await previewAudioCtx.resume();
+        }
+        previewOscillators = buildAmbientTrack(previewAudioCtx, totalSec, previewAudioCtx.destination);
+      } else if (bgmMode === 'custom' && bgmAudioEl) {
+        bgmAudioEl.currentTime = 0;
+        bgmAudioEl.play();
+      }
+
       let startTime = performance.now();
 
       function loop(now) {
         if (!isPlaying) return;
-        const elapsed = now - startTime;
-        const totalDuration = duration * scenes.length;
-        const currentProgress = (elapsed % totalDuration) / totalDuration;
+        const elapsed = (now - startTime) % totalDuration;
         
-        const sceneIdx = Math.floor((elapsed % totalDuration) / duration);
-        const sceneProgress = ((elapsed % totalDuration) % duration) / duration;
+        let accumulated = 0;
+        let sceneIdx = 0;
+        let sceneProgress = 0;
+
+        for (let i = 0; i < scenes.length; i++) {
+          const sceneMs = scenes[i].duration * 1000;
+          if (elapsed >= accumulated && elapsed < accumulated + sceneMs) {
+            sceneIdx = i;
+            sceneProgress = (elapsed - accumulated) / sceneMs;
+            break;
+          }
+          accumulated += sceneMs;
+        }
 
         drawFrame(sceneIdx, sceneProgress, currentMode);
 
-        document.getElementById('progressFill').style.width = (currentProgress * 100) + '%';
-        document.getElementById('statusText').innerText = `[${PLATFORMS[currentMode].name}] 미리보기: 씬 ${sceneIdx + 1}/${scenes.length}`;
+        document.getElementById('progressFill').style.width = ((elapsed / totalDuration) * 100) + '%';
+        const curMedia = scenes[sceneIdx].media;
+        const typeStr = (curMedia && curMedia.type === 'video') ? '동영상(10s)' : '스틸';
+        document.getElementById('statusText').innerText = `[${PLATFORMS[currentMode].name}] BGM 재생 중: 씬 ${sceneIdx + 1}/${scenes.length} (${typeStr})`;
 
         animId = requestAnimationFrame(loop);
       }
@@ -561,6 +566,13 @@
       if (animId) cancelAnimationFrame(animId);
       document.getElementById('progressFill').style.width = '0%';
       document.getElementById('statusText').innerText = '정지됨';
+
+      if (previewAudioCtx) {
+        previewAudioCtx.close();
+        previewAudioCtx = null;
+      }
+      if (bgmAudioEl) bgmAudioEl.pause();
+
       getScenes().forEach(s => {
         if (s.media && s.media.type === 'video') {
           s.media.element.pause();
@@ -569,26 +581,31 @@
       });
     }
 
-    async function recordSinglePlatform(modeKey, targetFolderHandle) {
+    // 단일 플랫폼 녹화 & C:\sns_contents 에 직접 쓰기
+    async function recordSinglePlatform(modeKey, targetFolderHandle, timeStampStr) {
       const config = PLATFORMS[modeKey];
       canvas.width = config.width;
       canvas.height = config.height;
       monitor.className = `monitor-container ${config.className}`;
 
       const scenes = getScenes();
-      const duration = parseFloat(document.getElementById('durationInput').value) * 1000;
-      const totalDuration = duration * scenes.length;
+      const totalDuration = scenes.reduce((acc, s) => acc + (s.duration * 1000), 0);
       const totalSec = totalDuration / 1000;
 
       const videoStream = canvas.captureStream(30);
-      const combinedStream = new MediaStream([videoStream.getVideoTracks()[0]]);
+      const combinedStream = new MediaStream();
+      combinedStream.addTrack(videoStream.getVideoTracks()[0]);
 
       const bgmMode = document.getElementById('bgmModeSelect').value;
       const aCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (aCtx.state === 'suspended') {
+        await aCtx.resume();
+      }
 
       if (bgmMode === 'synth') {
-        const audioTrack = createAmbientAudio(aCtx, totalSec + 1);
-        if (audioTrack) combinedStream.addTrack(audioTrack);
+        const dest = aCtx.createMediaStreamDestination();
+        buildAmbientTrack(aCtx, totalSec + 2, dest);
+        combinedStream.addTrack(dest.stream.getAudioTracks()[0]);
       } else if (bgmMode === 'custom' && bgmAudioEl) {
         const source = aCtx.createMediaElementSource(bgmAudioEl);
         const dest = aCtx.createMediaStreamDestination();
@@ -609,9 +626,13 @@
 
           const blob = new Blob(chunks, { type: 'video/webm' });
           const cleanTitle = document.getElementById('titleInput').value.replace(/[^a-zA-Z0-9가-힣]/g, '_');
-          const fileName = `${config.prefix}${cleanTitle}.webm`;
+          
+          // [핵심 변경] 파일명 형식: 날짜시간_fb / 날짜시간_in / 날짜시간_us
+          // 예: 20260926101530_fb_이창동_감독__가능한_사랑_.webm
+          const fileName = `${timeStampStr}_${config.prefix}_${cleanTitle}.webm`;
 
           try {
+            // 하위 폴더 없이 C:\sns_contents 바로 아래에 직접 저장
             const fileHandle = await targetFolderHandle.getFileHandle(fileName, { create: true });
             const writable = await fileHandle.createWritable();
             await writable.write(blob);
@@ -631,12 +652,24 @@
             recorder.stop();
             return;
           }
-          const sceneIdx = Math.floor(elapsed / duration);
-          const sceneProgress = (elapsed % duration) / duration;
+
+          let accumulated = 0;
+          let sceneIdx = 0;
+          let sceneProgress = 0;
+          for (let i = 0; i < scenes.length; i++) {
+            const sceneMs = scenes[i].duration * 1000;
+            if (elapsed >= accumulated && elapsed < accumulated + sceneMs) {
+              sceneIdx = i;
+              sceneProgress = (elapsed - accumulated) / sceneMs;
+              break;
+            }
+            accumulated += sceneMs;
+          }
+
           drawFrame(sceneIdx, sceneProgress, modeKey);
 
           document.getElementById('progressFill').style.width = ((elapsed / totalDuration) * 100) + '%';
-          document.getElementById('statusText').innerText = `[${config.name}] 인코딩 중... ${(elapsed / 1000).toFixed(1)}s`;
+          document.getElementById('statusText').innerText = `[${config.name}] 인코딩 중... ${(elapsed / 1000).toFixed(1)}s / ${totalSec.toFixed(1)}s`;
 
           requestAnimationFrame(renderFrame);
         }
@@ -644,49 +677,53 @@
       });
     }
 
-    function getTodayString() {
+    // 날짜시각 문자열 생성 (YYYYMMDDHHMMSS)
+    function getFullTimestampString() {
       const now = new Date();
       const y = now.getFullYear();
       const m = String(now.getMonth() + 1).padStart(2, '0');
       const d = String(now.getDate()).padStart(2, '0');
-      return `${y}${m}${d}`;
+      const hh = String(now.getHours()).padStart(2, '0');
+      const mm = String(now.getMinutes()).padStart(2, '0');
+      const ss = String(now.getSeconds()).padStart(2, '0');
+      return `${y}${m}${d}${hh}${mm}${ss}`;
     }
 
-    // 🚀 [콘텐츠제목_날짜] 폴더 자동 생성 및 저장
+    // 🚀 저장하기: C:\sns_contents 선택 후 하위 폴더 없이 파일명 정렬 저장
     async function executeRender() {
+      stopPreview();
+
       if (!rootDirHandle) {
-        alert('먼저 1번 [폴더 선택하기]를 눌러 C:\\sns_contents 폴더를 지정해 주세요.');
-        await selectRootDirectory();
-        if (!rootDirHandle) return;
+        try {
+          rootDirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+        } catch (err) {
+          if (err.name !== 'AbortError') {
+            document.getElementById('statusText').innerText = '❌ 폴더 접근 권한을 획득하지 못했습니다.';
+          }
+          return;
+        }
       }
 
-      stopPreview();
       const renderBtn = document.getElementById('renderBtn');
       renderBtn.disabled = true;
 
       try {
-        const rawTitle = document.getElementById('titleInput').value.trim();
-        const cleanTitle = rawTitle.replace(/[\/:*?"<>| ]/g, '_');
-        const folderName = `${cleanTitle}_${getTodayString()}`;
-
-        // C:\sns_contents 아래에 [제목_날짜] 폴더 자동 생성
-        const targetFolderHandle = await rootDirHandle.getDirectoryHandle(folderName, { create: true });
+        const timeStampStr = getFullTimestampString();
+        const targets = (exportTarget === 'all') ? ['fb', 'is', 'us'] : [exportTarget];
         
-        // All 또는 단일 플랫폼 분기
-        const targets = (exportTarget === 'all') ? ['us', 'is', 'fb'] : [exportTarget];
-        document.getElementById('statusText').innerText = `폴더: ${folderName}\n(${targets.map(t => PLATFORMS[t].name).join(', ')}) 생성 시작...`;
+        document.getElementById('statusText').innerText = `저장 위치: ${rootDirHandle.name}\n파일 생성 및 사운드 합성 시작...`;
 
         const completed = [];
         for (const mode of targets) {
-          const savedFile = await recordSinglePlatform(mode, targetFolderHandle);
+          const savedFile = await recordSinglePlatform(mode, rootDirHandle, timeStampStr);
           completed.push(savedFile);
         }
 
-        document.getElementById('statusText').innerText = `🎉 완료!\n저장위치: C:\\sns_contents\\${folderName}\n(${completed.join(', ')})`;
+        document.getElementById('statusText').innerText = `🎉 완료!\n${rootDirHandle.name}에 저장되었습니다:\n${completed.join('\n')}`;
         document.getElementById('statusText').style.color = '#38bdf8';
       } catch (err) {
         console.error(err);
-        document.getElementById('statusText').innerText = '❌ 오류: 저장 폴더 권한 또는 인코딩 에러';
+        document.getElementById('statusText').innerText = '❌ 저장 실패: 폴더 쓰기 권한을 확인해주세요.';
         document.getElementById('statusText').style.color = '#ef4444';
       } finally {
         renderBtn.disabled = false;
